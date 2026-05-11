@@ -254,7 +254,7 @@ FocusScope {
                             iconName: "create_new_folder"
                             onClicked: {
                                 PluginService.createPluginDirectory();
-                                ToastService.showInfo("Created plugin directory: " + PluginService.pluginDirectory);
+                                ToastService.showInfo(I18n.tr("Created plugin directory: %1").arg(PluginService.pluginDirectory));
                             }
                         }
                     }
