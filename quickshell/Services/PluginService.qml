@@ -5,11 +5,13 @@ import QtCore
 import QtQuick
 import Qt.labs.folderlistmodel
 import Quickshell
+import Quickshell.Io
 import qs.Common
 import qs.Services
 
 Singleton {
     id: root
+    readonly property var log: Log.scoped("PluginService")
 
     property var availablePlugins: ({})
     property var loadedPlugins: ({})
@@ -153,40 +155,48 @@ Singleton {
     }
 
     function loadPluginManifestFile(manifestPathNoScheme, sourceTag, mtimeEpochMs) {
-        const manifestId = "m_" + Math.random().toString(36).slice(2);
-        const qml = `
-            import QtQuick
-            import Quickshell.Io
-            FileView {
-                id: fv
-                property string absPath: ""
-                onLoaded: {
-                    try {
-                        let raw = text()
-                        if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1)
-                        const manifest = JSON.parse(raw)
-                        root._onManifestParsed(absPath, manifest, "${sourceTag}", ${mtimeEpochMs})
-                    } catch (e) {
-                        console.error("PluginService: bad manifest", absPath, e.message)
-                        knownManifests[absPath] = { mtime: ${mtimeEpochMs}, source: "${sourceTag}", bad: true }
-                    }
-                    fv.destroy()
-                }
-                onLoadFailed: (err) => {
-                    console.warn("PluginService: manifest load failed", absPath, err)
-                    fv.destroy()
-                }
-            }
-        `;
+        const loader = manifestFvComp.createObject(root, {
+            absPath: manifestPathNoScheme,
+            path: manifestPathNoScheme,
+            sourceTag: sourceTag,
+            mtimeEpochMs: mtimeEpochMs
+        });
+    }
 
-        const loader = Qt.createQmlObject(qml, root, "mf_" + manifestId);
-        loader.absPath = manifestPathNoScheme;
-        loader.path = manifestPathNoScheme;
+    Component {
+        id: manifestFvComp
+        FileView {
+            id: fv
+            property string absPath: ""
+            property string sourceTag: ""
+            property double mtimeEpochMs: 0
+            onLoaded: {
+                try {
+                    let raw = text();
+                    if (raw.charCodeAt(0) === 0xFEFF)
+                        raw = raw.slice(1);
+                    const manifest = JSON.parse(raw);
+                    root._onManifestParsed(absPath, manifest, sourceTag, mtimeEpochMs);
+                } catch (e) {
+                    root.log.error("bad manifest", absPath, e.message);
+                    root.knownManifests[absPath] = {
+                        mtime: mtimeEpochMs,
+                        source: sourceTag,
+                        bad: true
+                    };
+                }
+                fv.destroy();
+            }
+            onLoadFailed: err => {
+                root.log.warn("manifest load failed", absPath, err);
+                fv.destroy();
+            }
+        }
     }
 
     function _onManifestParsed(absPath, manifest, sourceTag, mtimeEpochMs) {
         if (!manifest || !manifest.id || !manifest.name || !manifest.component) {
-            console.error("PluginService: invalid manifest fields:", absPath);
+            log.error("invalid manifest fields:", absPath);
             knownManifests[absPath] = {
                 mtime: mtimeEpochMs,
                 source: sourceTag,
@@ -269,7 +279,7 @@ Singleton {
     function loadPlugin(pluginId, bustCache) {
         const plugin = availablePlugins[pluginId];
         if (!plugin) {
-            console.error("PluginService: Plugin not found:", pluginId);
+            log.error("Plugin not found:", pluginId);
             pluginLoadFailed(pluginId, "Plugin not found");
             return false;
         }
@@ -296,7 +306,7 @@ Singleton {
                 url += "?t=" + Date.now();
             const comp = Qt.createComponent(url, Component.PreferSynchronous);
             if (comp.status === Component.Error) {
-                console.error("PluginService: component error", pluginId, comp.errorString());
+                log.error("component error", pluginId, comp.errorString());
                 pluginLoadFailed(pluginId, comp.errorString());
                 return false;
             }
@@ -310,7 +320,7 @@ Singleton {
                     "pluginService": root
                 });
                 if (!instance) {
-                    console.error("PluginService: failed to instantiate plugin:", pluginId, comp.errorString());
+                    log.error("failed to instantiate plugin:", pluginId, comp.errorString());
                     pluginLoadFailed(pluginId, comp.errorString());
                     return false;
                 }
@@ -339,7 +349,7 @@ Singleton {
             pluginLoaded(pluginId);
             return true;
         } catch (e) {
-            console.error("PluginService: Error loading plugin:", pluginId, e.message);
+            log.error("Error loading plugin:", pluginId, e.message);
             pluginLoadFailed(pluginId, e.message);
             return false;
         }
@@ -348,7 +358,7 @@ Singleton {
     function unloadPlugin(pluginId) {
         const plugin = loadedPlugins[pluginId];
         if (!plugin) {
-            console.warn("PluginService: Plugin not loaded:", pluginId);
+            log.warn("Plugin not loaded:", pluginId);
             return false;
         }
 
@@ -392,7 +402,7 @@ Singleton {
             pluginUnloaded(pluginId);
             return true;
         } catch (error) {
-            console.error("PluginService: Error unloading plugin:", pluginId, "Error:", error.message);
+            log.error("Error unloading plugin:", pluginId, "Error:", error.message);
             return false;
         }
     }
@@ -669,10 +679,10 @@ Singleton {
         _stateLoaded[pluginId] = true;
         _ensureStateDir();
         const path = getPluginStatePath(pluginId);
-        const escapedPath = path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
         try {
-            const qml = 'import QtQuick; import Quickshell.Io; FileView { path: "' + escapedPath + '"; blockLoading: true; blockWrites: true; atomicWrites: true }';
-            const fv = Qt.createQmlObject(qml, root, "sf_" + pluginId);
+            const fv = stateLoadFvComp.createObject(root, {
+                path: path
+            });
             const raw = fv.text();
             if (raw && raw.trim()) {
                 _stateCache[pluginId] = JSON.parse(raw);
@@ -693,10 +703,10 @@ Singleton {
             return;
         }
         const path = getPluginStatePath(pluginId);
-        const escapedPath = path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
         try {
-            const qml = 'import QtQuick; import Quickshell.Io; FileView { path: "' + escapedPath + '"; blockWrites: true; atomicWrites: true }';
-            const fv = Qt.createQmlObject(qml, root, "sw_" + pluginId);
+            const fv = stateSaveFvComp.createObject(root, {
+                path: path
+            });
             _stateWriters[pluginId] = fv;
             fv.loaded.connect(function () {
                 fv.setText(content);
@@ -705,7 +715,24 @@ Singleton {
                 fv.setText(content);
             });
         } catch (e) {
-            console.warn("PluginService: Failed to write state for", pluginId, e.message);
+            log.warn("Failed to write state for", pluginId, e.message);
+        }
+    }
+
+    Component {
+        id: stateLoadFvComp
+        FileView {
+            blockLoading: true
+            blockWrites: true
+            atomicWrites: true
+        }
+    }
+
+    Component {
+        id: stateSaveFvComp
+        FileView {
+            blockWrites: true
+            atomicWrites: true
         }
     }
 
@@ -747,22 +774,8 @@ Singleton {
     }
 
     function createPluginDirectory() {
-        const mkdirProcess = Qt.createComponent("data:text/plain,import Quickshell.Io; Process { }");
-        if (mkdirProcess.status === Component.Ready) {
-            const process = mkdirProcess.createObject(root);
-            process.command = ["mkdir", "-p", pluginDirectory];
-            process.exited.connect(function (exitCode) {
-                if (exitCode !== 0) {
-                    console.error("PluginService: Failed to create plugin directory, exit code:", exitCode);
-                }
-                process.destroy();
-            });
-            process.running = true;
-            return true;
-        } else {
-            console.error("PluginService: Failed to create mkdir process");
-            return false;
-        }
+        Quickshell.execDetached(["mkdir", "-p", pluginDirectory]);
+        return true;
     }
 
     // Launcher plugin helper functions
@@ -860,7 +873,7 @@ Singleton {
     function checkPluginCompatibility(requiresDms) {
         if (!requiresDms)
             return true;
-        return SystemUpdateService.checkVersionRequirement(requiresDms, SystemUpdateService.getParsedShellVersion());
+        return ShellVersionService.checkVersionRequirement(requiresDms, ShellVersionService.getParsedShellVersion());
     }
 
     function getIncompatiblePlugins() {

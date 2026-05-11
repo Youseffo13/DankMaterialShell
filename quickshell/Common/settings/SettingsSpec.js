@@ -49,6 +49,8 @@ var SPEC = {
     modalAnimationSpeed: { def: 1 },
     modalCustomAnimationDuration: { def: 150 },
     enableRippleEffects: { def: true },
+    animationVariant: { def: 0 },
+    motionEffect: { def: 0 },
     m3ElevationEnabled: { def: true },
     m3ElevationIntensity: { def: 12 },
     m3ElevationOpacity: { def: 30 },
@@ -240,6 +242,8 @@ var SPEC = {
     monoFontFamily: { def: "Fira Code" },
     fontWeight: { def: 400 },
     fontScale: { def: 1.0 },
+    textRenderType: { def: 1 },
+    textRenderQuality: { def: 0 },
 
     notepadUseMonospace: { def: true },
     notepadFontFamily: { def: "" },
@@ -302,6 +306,7 @@ var SPEC = {
     matugenTemplatePywalfox: { def: true },
     matugenTemplateZenBrowser: { def: true },
     matugenTemplateVesktop: { def: true },
+    matugenTemplateVencord: { def: true },
     matugenTemplateEquibop: { def: true },
     matugenTemplateGhostty: { def: true },
     matugenTemplateKitty: { def: true },
@@ -326,6 +331,7 @@ var SPEC = {
     showDock: { def: false },
     dockAutoHide: { def: false },
     dockSmartAutoHide: { def: false },
+    dockHideOnFullscreen: { def: true },
     dockGroupByApp: { def: false },
     dockRestoreSpecialWorkspaceOnClick: { def: false },
     dockOpenOnOverview: { def: false },
@@ -428,6 +434,9 @@ var SPEC = {
     updaterUseCustomCommand: { def: false },
     updaterCustomCommand: { def: "" },
     updaterTerminalAdditionalParams: { def: "" },
+    updaterIntervalSeconds: { def: 1800 },
+    updaterIncludeFlatpak: { def: true },
+    updaterAllowAUR: { def: true },
 
     displayNameMode: { def: "system" },
     screenPreferences: { def: {} },
@@ -439,6 +448,7 @@ var SPEC = {
     displayProfileAutoSelect: { def: false },
     displayShowDisconnected: { def: false },
     displaySnapToEdge: { def: true },
+    connectedFrameBarStyleBackups: { def: {} },
 
     barConfigs: {
         def: [{
@@ -476,6 +486,7 @@ var SPEC = {
             fontScale: 1.0,
             iconScale: 1.0,
             autoHide: false,
+            autoHideStrict: false,
             autoHideDelay: 250,
             showOnWindowsOpen: false,
             openOnOverview: false,
@@ -483,6 +494,7 @@ var SPEC = {
             popupGapsAuto: true,
             popupGapsManual: 4,
             maximizeDetection: true,
+            fullscreenDetection: true,
             scrollEnabled: true,
             scrollXBehavior: "column",
             scrollYBehavior: "workspace",
@@ -545,7 +557,21 @@ var SPEC = {
     clipboardEnterToPaste: { def: false },
 
     launcherPluginVisibility: { def: {} },
-    launcherPluginOrder: { def: [] }
+    launcherPluginOrder: { def: [] },
+
+    frameEnabled: { def: false },
+    frameThickness: { def: 16 },
+    frameRounding: { def: 23 },
+    frameColor: { def: "" },
+    frameOpacity: { def: 1.0 },
+    frameScreenPreferences: { def: ["all"] },
+    frameBarSize: { def: 40 },
+    frameShowOnOverview: { def: false },
+    frameBlurEnabled: { def: true },
+    frameCloseGaps: { def: true },
+    frameLauncherEmergeSide: { def: "bottom" },
+    frameLauncherArcExtender: { def: false },
+    frameMode: { def: "separate" }
 };
 
 function getValidKeys() {

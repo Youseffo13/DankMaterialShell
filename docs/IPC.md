@@ -396,6 +396,10 @@ Top bar visibility control.
 - Toggle top bar visibility
 - Returns: Success confirmation with current state
 
+**`toggleReveal`**
+- Toggle the runtime reveal/tuck state for an autohidden bar
+- Returns: Success confirmation with current reveal state
+
 **`status`**
 - Get current top bar visibility status
 - Returns: "visible" or "hidden"
@@ -403,22 +407,35 @@ Top bar visibility control.
 ### Examples
 ```bash
 dms ipc call bar toggle
+dms ipc call bar toggleReveal index 0
 dms ipc call bar hide
 dms ipc call bar status
 ```
 
 ## Target: `systemupdater`
 
-System updater external check request.
+System updater widget control and background update checks.
 
 ### Functions
 
+**`toggle`**
+- Toggle the system updater popout open/closed
+
+**`open`**
+- Open the system updater popout
+
+**`close`**
+- Close the system updater popout
+
 **`updatestatus`**
-- Trigger a system update check
+- Trigger a background update check
 - Returns: Success confirmation
 
 ### Examples
 ```bash
+dms ipc call systemupdater toggle
+dms ipc call systemupdater open
+dms ipc call systemupdater close
 dms ipc call systemupdater updatestatus
 ```
 

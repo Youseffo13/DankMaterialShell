@@ -57,6 +57,144 @@ Item {
 
             SettingsCard {
                 tab: "typography"
+                tags: ["animation", "variant", "style", "slide", "fluent", "dynamic", "motion"]
+                title: I18n.tr("Animation Style")
+                settingKey: "animationVariant"
+                iconName: "auto_awesome_motion"
+
+                Item {
+                    width: parent.width
+                    height: animVariantGroup.implicitHeight
+                    clip: true
+
+                    DankButtonGroup {
+                        id: animVariantGroup
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        buttonPadding: parent.width < 480 ? Theme.spacingS : Theme.spacingL
+                        minButtonWidth: parent.width < 480 ? 64 : 96
+                        textSize: parent.width < 480 ? Theme.fontSizeSmall : Theme.fontSizeMedium
+                        model: [I18n.tr("Material"), I18n.tr("Fluent"), I18n.tr("Dynamic")]
+                        selectionMode: "single"
+                        currentIndex: SettingsData.animationVariant
+                        onSelectionChanged: (index, selected) => {
+                            if (!selected)
+                                return;
+                            SettingsData.set("animationVariant", index);
+                        }
+
+                        Connections {
+                            target: SettingsData
+                            function onAnimationVariantChanged() {
+                                animVariantGroup.currentIndex = SettingsData.animationVariant;
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: Theme.outline
+                    opacity: 0.15
+                }
+
+                Item {
+                    width: parent.width
+                    height: variantDescription.implicitHeight + Theme.spacingS * 2
+
+                    StyledText {
+                        id: variantDescription
+                        x: Theme.spacingM
+                        y: Theme.spacingS
+                        width: parent.width - Theme.spacingM * 2
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        wrapMode: Text.WordWrap
+                        text: {
+                            switch (SettingsData.animationVariant) {
+                            case 1:
+                                return I18n.tr("Fluent: Smooth cubic deceleration in, quick snap out — clean, elegant curves.");
+                            case 2:
+                                return I18n.tr("Dynamic: Spring bezier with overshoot — entry briefly exceeds its target then settles. Expressive and alive.");
+                            default:
+                                return I18n.tr("Material: Material Design 3 Expressive bezier curves. The DMS default feel.");
+                            }
+                        }
+                    }
+                }
+            }
+
+            SettingsCard {
+                tab: "typography"
+                tags: ["animation", "motion", "effect", "slide", "directional", "depth", "spring", "physics"]
+                title: I18n.tr("Motion Effects")
+                settingKey: "motionEffect"
+                iconName: "motion_photos_on"
+
+                Item {
+                    width: parent.width
+                    height: motionEffectGroup.implicitHeight
+                    clip: true
+
+                    DankButtonGroup {
+                        id: motionEffectGroup
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        buttonPadding: parent.width < 480 ? Theme.spacingS : Theme.spacingL
+                        minButtonWidth: parent.width < 480 ? 64 : 96
+                        textSize: parent.width < 480 ? Theme.fontSizeSmall : Theme.fontSizeMedium
+                        model: [I18n.tr("Standard"), I18n.tr("Directional"), I18n.tr("Depth")]
+                        selectionMode: "single"
+                        currentIndex: SettingsData.motionEffect
+                        onSelectionChanged: (index, selected) => {
+                            if (!selected)
+                                return;
+                            SettingsData.set("motionEffect", index);
+                        }
+
+                        Connections {
+                            target: SettingsData
+                            function onMotionEffectChanged() {
+                                motionEffectGroup.currentIndex = SettingsData.motionEffect;
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: Theme.outline
+                    opacity: 0.15
+                }
+
+                Item {
+                    width: parent.width
+                    height: motionEffectDescription.implicitHeight + Theme.spacingS * 2
+
+                    StyledText {
+                        id: motionEffectDescription
+                        x: Theme.spacingM
+                        y: Theme.spacingS
+                        width: parent.width - Theme.spacingM * 2
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        wrapMode: Text.WordWrap
+                        text: {
+                            switch (SettingsData.motionEffect) {
+                            case 1:
+                                return I18n.tr("Directional: Panels glide in from a larger distance at full size — no scale change, pure clean motion.");
+                            case 2:
+                                return I18n.tr("Depth: Panels scale up from small as they slide in — a dramatic pop-forward depth effect.");
+                            default:
+                                return I18n.tr("Standard: Classic Material Design 3 — panels rise from below with a subtle scale. The DMS default.");
+                            }
+                        }
+                    }
+                }
+            }
+
+            SettingsCard {
+                tab: "typography"
                 tags: ["font", "family", "text", "typography"]
                 title: I18n.tr("Typography")
                 settingKey: "typography"
@@ -203,6 +341,153 @@ Item {
 
             SettingsCard {
                 tab: "typography"
+                tags: ["text", "render", "rendering", "quality", "anti-aliasing", "freetype", "distance", "field"]
+                title: I18n.tr("Text Rendering")
+                settingKey: "textRenderType"
+                iconName: "text_format"
+
+                Item {
+                    width: parent.width
+                    height: renderTypeGroup.implicitHeight
+                    clip: true
+
+                    DankButtonGroup {
+                        id: renderTypeGroup
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        buttonPadding: parent.width < 480 ? Theme.spacingS : Theme.spacingL
+                        minButtonWidth: parent.width < 480 ? 64 : 96
+                        textSize: parent.width < 480 ? Theme.fontSizeSmall : Theme.fontSizeMedium
+                        model: ["Native", "Qt", "Curve"]
+                        selectionMode: "single"
+                        currentIndex: {
+                            switch (SettingsData.textRenderType) {
+                            case SettingsData.TextRenderType.Qt:
+                                return 1;
+                            case SettingsData.TextRenderType.Curve:
+                                return 2;
+                            default:
+                                return 0;
+                            }
+                        }
+                        onSelectionChanged: (index, selected) => {
+                            if (!selected)
+                                return;
+                            switch (index) {
+                            case 1:
+                                SettingsData.set("textRenderType", SettingsData.TextRenderType.Qt);
+                                break;
+                            case 2:
+                                SettingsData.set("textRenderType", SettingsData.TextRenderType.Curve);
+                                break;
+                            default:
+                                SettingsData.set("textRenderType", SettingsData.TextRenderType.Native);
+                                break;
+                            }
+                        }
+
+                        Connections {
+                            target: SettingsData
+                            function onTextRenderTypeChanged() {
+                                switch (SettingsData.textRenderType) {
+                                case SettingsData.TextRenderType.Qt:
+                                    renderTypeGroup.currentIndex = 1;
+                                    break;
+                                case SettingsData.TextRenderType.Curve:
+                                    renderTypeGroup.currentIndex = 2;
+                                    break;
+                                default:
+                                    renderTypeGroup.currentIndex = 0;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: Theme.outline
+                    opacity: 0.15
+                }
+
+                Item {
+                    width: parent.width
+                    height: renderTypeDescription.implicitHeight + Theme.spacingS * 2
+
+                    StyledText {
+                        id: renderTypeDescription
+                        x: Theme.spacingM
+                        y: Theme.spacingS
+                        width: parent.width - Theme.spacingM * 2
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        wrapMode: Text.WordWrap
+                        text: {
+                            switch (SettingsData.textRenderType) {
+                            case SettingsData.TextRenderType.Qt:
+                                return I18n.tr("Qt: distance-field renderer.");
+                            case SettingsData.TextRenderType.Curve:
+                                return I18n.tr("Curve: curve rasterizer.");
+                            default:
+                                return I18n.tr("Native: platform renderer (FreeType).");
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: 1
+                    color: Theme.outline
+                    opacity: 0.15
+                    visible: SettingsData.textRenderType === SettingsData.TextRenderType.Qt
+                }
+
+                Item {
+                    width: parent.width
+                    height: visible ? qualityGroup.implicitHeight + qualityLabel.implicitHeight + Theme.spacingS : 0
+                    visible: SettingsData.textRenderType === SettingsData.TextRenderType.Qt
+                    clip: true
+
+                    StyledText {
+                        id: qualityLabel
+                        x: Theme.spacingM
+                        text: I18n.tr("Quality")
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.weight: Font.Medium
+                        color: Theme.surfaceText
+                    }
+
+                    DankButtonGroup {
+                        id: qualityGroup
+                        anchors.top: qualityLabel.bottom
+                        anchors.topMargin: Theme.spacingS
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        buttonPadding: parent.width < 480 ? Theme.spacingXS : Theme.spacingS
+                        minButtonWidth: parent.width < 480 ? 40 : 56
+                        textSize: parent.width < 480 ? Theme.fontSizeSmall : Theme.fontSizeMedium
+                        model: ["Default", "Low", "Normal", "High", "Very High"]
+                        selectionMode: "single"
+                        currentIndex: SettingsData.textRenderQuality
+                        onSelectionChanged: (index, selected) => {
+                            if (!selected)
+                                return;
+                            SettingsData.set("textRenderQuality", index);
+                        }
+
+                        Connections {
+                            target: SettingsData
+                            function onTextRenderQualityChanged() {
+                                qualityGroup.currentIndex = SettingsData.textRenderQuality;
+                            }
+                        }
+                    }
+                }
+            }
+
+            SettingsCard {
+                tab: "typography"
                 tags: ["animation", "speed", "motion", "duration"]
                 title: I18n.tr("Animation Speed")
                 settingKey: "animationSpeed"
@@ -295,12 +580,6 @@ Item {
                     description: I18n.tr("Popouts and Modals follow global Animation Speed (disable to customize independently)")
                     checked: SettingsData.syncComponentAnimationSpeeds
                     onToggled: checked => SettingsData.set("syncComponentAnimationSpeeds", checked)
-
-                    Connections {
-                        target: SettingsData
-                        function onSyncComponentAnimationSpeedsChanged() {
-                        }
-                    }
                 }
             }
 

@@ -8,6 +8,10 @@ import qs.Modules.Settings.Widgets
 Item {
     id: root
 
+    property var parentModal: null
+    readonly property bool connectedFrameModeActive: SettingsData.connectedFrameModeActive
+    readonly property bool connectedPersistentDockActive: connectedFrameModeActive && SettingsData.showDock && !SettingsData.dockAutoHide && !SettingsData.dockSmartAutoHide
+
     FileBrowserModal {
         id: dockLogoFileBrowser
         browserTitle: I18n.tr("Select Dock Launcher Logo")
@@ -83,6 +87,16 @@ Item {
                     checked: SettingsData.dockOpenOnOverview
                     visible: CompositorService.isNiri
                     onToggled: checked => SettingsData.set("dockOpenOnOverview", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "dockHideOnFullscreen"
+                    tags: ["dock", "fullscreen", "hide"]
+                    text: I18n.tr("Hide When Fullscreen", "dock visibility toggle: hide the dock when a window is fullscreen")
+                    description: I18n.tr("Hide the dock when a window is fullscreen", "dock visibility toggle description")
+                    checked: SettingsData.dockHideOnFullscreen
+                    visible: SettingsData.showDock
+                    onToggled: checked => SettingsData.set("dockHideOnFullscreen", checked)
                 }
             }
 
@@ -598,27 +612,39 @@ Item {
                     value: SettingsData.dockSpacing
                     minimum: 0
                     maximum: 32
+                    unit: "px"
                     defaultValue: 8
                     onSliderValueChanged: newValue => SettingsData.set("dockSpacing", newValue)
                 }
 
                 SettingsSliderRow {
                     text: I18n.tr("Exclusive Zone Offset")
+                    visible: !root.connectedFrameModeActive || root.connectedPersistentDockActive
                     value: SettingsData.dockBottomGap
                     minimum: -100
                     maximum: 100
+                    unit: "px"
                     defaultValue: 0
                     onSliderValueChanged: newValue => SettingsData.set("dockBottomGap", newValue)
                 }
 
                 SettingsSliderRow {
                     text: I18n.tr("Margin")
+                    visible: !root.connectedFrameModeActive
                     value: SettingsData.dockMargin
                     minimum: 0
                     maximum: 100
+                    unit: "px"
                     defaultValue: 0
                     onSliderValueChanged: newValue => SettingsData.set("dockMargin", newValue)
                 }
+            }
+
+            SettingsControlledByFrame {
+                visible: root.connectedFrameModeActive
+                parentModal: root.parentModal
+                settingLabel: I18n.tr("Dock margin, transparency, and border")
+                reason: I18n.tr("Managed by Frame in Connected Mode")
             }
 
             SettingsCard {
@@ -626,6 +652,7 @@ Item {
                 iconName: "opacity"
                 title: I18n.tr("Transparency")
                 settingKey: "dockTransparency"
+                visible: !root.connectedFrameModeActive
 
                 SettingsSliderRow {
                     text: I18n.tr("Dock Transparency")
@@ -645,6 +672,7 @@ Item {
                 settingKey: "dockBorder"
                 collapsible: true
                 expanded: false
+                visible: !root.connectedFrameModeActive
 
                 SettingsToggleRow {
                     text: I18n.tr("Border")

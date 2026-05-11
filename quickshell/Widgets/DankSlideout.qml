@@ -1,3 +1,4 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import Quickshell
@@ -5,8 +6,6 @@ import Quickshell.Wayland
 import qs.Common
 import qs.Services
 import qs.Widgets
-
-pragma ComponentBehavior: Bound
 
 PanelWindow {
     id: root
@@ -25,27 +24,28 @@ PanelWindow {
     property string title: ""
     property alias container: contentContainer
     property real customTransparency: -1
+    property bool mappedVisible: false
     signal aboutToHide
 
     function show() {
-        visible = true
-        isVisible = true
+        mappedVisible = true;
+        Qt.callLater(() => { isVisible = true; });
     }
 
     function hide() {
-        aboutToHide()
-        isVisible = false
+        aboutToHide();
+        isVisible = false;
     }
 
     function toggle() {
         if (isVisible) {
-            hide()
+            hide();
         } else {
-            show()
+            show();
         }
     }
 
-    visible: isVisible
+    visible: root.mappedVisible
     screen: modelData
 
     anchors.top: true
@@ -58,7 +58,7 @@ PanelWindow {
 
     color: "transparent"
 
-    readonly property bool slideoutBlurActive: root.visible && BlurService.enabled
+    readonly property bool slideoutBlurActive: root.visible && BlurService.enabled && Theme.connectedSurfaceBlurEnabled
 
     WlrLayershell.layer: WlrLayershell.Top
     WlrLayershell.exclusiveZone: 0
@@ -83,15 +83,15 @@ PanelWindow {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.right: parent.right
-        width: alignedWidth
-        height: alignedHeight
+        width: root.alignedWidth
+        height: root.alignedHeight
 
-        property real slideOffset: alignedWidth
+        property real slideOffset: root.alignedWidth
 
         Connections {
             target: root
             function onIsVisibleChanged() {
-                slideContainer.slideOffset = root.isVisible ? 0 : slideContainer.width
+                slideContainer.slideOffset = root.isVisible ? 0 : slideContainer.width;
             }
         }
 
@@ -102,8 +102,8 @@ PanelWindow {
                 easing.type: Easing.OutCubic
 
                 onRunningChanged: {
-                    if (!running && !isVisible) {
-                        root.visible = false
+                    if (!running && !root.isVisible) {
+                        root.mappedVisible = false;
                     }
                 }
             }
@@ -125,7 +125,7 @@ PanelWindow {
             layer.textureSize: Qt.size(width * root.dpr, height * root.dpr)
             opacity: 1
 
-            readonly property real effectiveTransparency: customTransparency >= 0 ? customTransparency : SettingsData.popupTransparency
+            readonly property color slideoutSurfaceColor: root.customTransparency >= 0 ? Theme.withAlpha(Theme.surfaceContainer, root.customTransparency) : Theme.popupLayerColor(Theme.surfaceContainer)
 
             anchors.top: parent.top
             anchors.bottom: parent.bottom
@@ -134,10 +134,10 @@ PanelWindow {
 
             Rectangle {
                 anchors.fill: parent
-                color: Theme.transparentBlurLayers ? "transparent" : Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, contentRect.effectiveTransparency)
-                radius: Theme.cornerRadius
-                border.color: BlurService.enabled ? BlurService.borderColor : Theme.outlineMedium
-                border.width: BlurService.borderWidth
+                color: contentRect.slideoutSurfaceColor
+                radius: Theme.connectedSurfaceRadius
+                border.color: Theme.isConnectedEffect ? "transparent" : (BlurService.enabled ? BlurService.borderColor : Theme.outlineMedium)
+                border.width: Theme.isConnectedEffect ? 0 : BlurService.borderWidth
             }
 
             Column {
@@ -222,6 +222,6 @@ PanelWindow {
         blurY: root.slideoutBlurActive ? slideContainer.y : 0
         blurWidth: root.slideoutBlurActive ? slideContainer.width : 0
         blurHeight: root.slideoutBlurActive ? slideContainer.height : 0
-        blurRadius: Theme.cornerRadius
+        blurRadius: Theme.connectedSurfaceRadius
     }
 }

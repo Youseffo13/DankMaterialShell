@@ -202,10 +202,9 @@ Singleton {
     }
 
     function unloadDankDash() {
-        if (!dankDashPopoutLoader)
-            return;
-        dankDashPopout = null;
-        dankDashPopoutLoader.active = false;
+        // DankDash is intentionally kept alive after first use. Destroying this
+        // lazy popout during its close signal can invalidate connected overlay
+        // bindings while Qt is still unwinding the signal stack.
     }
 
     function toggleDankDash(tabIndex, x, y, width, section, screen) {
@@ -305,7 +304,8 @@ Singleton {
 
     function openSystemUpdate(x, y, width, section, screen) {
         if (systemUpdatePopout) {
-            setPosition(systemUpdatePopout, x, y, width, section, screen);
+            if (arguments.length >= 5)
+                setPosition(systemUpdatePopout, x, y, width, section, screen);
             systemUpdatePopout.open();
         }
     }
@@ -323,7 +323,8 @@ Singleton {
 
     function toggleSystemUpdate(x, y, width, section, screen) {
         if (systemUpdatePopout) {
-            setPosition(systemUpdatePopout, x, y, width, section, screen);
+            if (arguments.length >= 5)
+                setPosition(systemUpdatePopout, x, y, width, section, screen);
             systemUpdatePopout.toggle();
         }
     }
@@ -629,6 +630,13 @@ Singleton {
 
     function hideProcessListModal() {
         processListModal?.hide();
+    }
+
+    function unloadProcessListModal() {
+        if (processListModalLoader) {
+            processListModal = null;
+            processListModalLoader.active = false;
+        }
     }
 
     function toggleProcessListModal() {

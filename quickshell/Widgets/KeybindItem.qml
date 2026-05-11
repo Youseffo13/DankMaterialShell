@@ -11,6 +11,7 @@ import "../Common/KeybindActions.js" as Actions
 
 Item {
     id: root
+    readonly property var log: Log.scoped("KeybindItem")
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
@@ -40,16 +41,7 @@ Item {
     property string _actionType: ""
     property bool addingNewKey: false
     property bool useCustomCompositor: false
-    property var _shortcutInhibitor: null
     property bool _altShiftGhost: false
-
-    readonly property bool _shortcutInhibitorAvailable: {
-        try {
-            return typeof ShortcutInhibitor !== "undefined";
-        } catch (e) {
-            return false;
-        }
-    }
 
     readonly property var keys: bindData.keys || []
     readonly property bool hasOverride: {
@@ -250,41 +242,17 @@ Item {
         addingNewKey = false;
     }
 
-    function _createShortcutInhibitor() {
-        if (!_shortcutInhibitorAvailable || _shortcutInhibitor)
-            return;
-        const qmlString = `
-        import QtQuick
-        import Quickshell.Wayland
-
-        ShortcutInhibitor {
-        enabled: false
-        window: null
-        }
-        `;
-
-        _shortcutInhibitor = Qt.createQmlObject(qmlString, root, "KeybindItem.ShortcutInhibitor");
-        _shortcutInhibitor.enabled = Qt.binding(() => root.recording);
-        _shortcutInhibitor.window = Qt.binding(() => root.panelWindow);
-    }
-
-    function _destroyShortcutInhibitor() {
-        if (_shortcutInhibitor) {
-            _shortcutInhibitor.enabled = false;
-            _shortcutInhibitor.destroy();
-            _shortcutInhibitor = null;
-        }
+    ShortcutInhibitor {
+        window: root.panelWindow
+        enabled: root.recording
     }
 
     function startRecording() {
-        _destroyShortcutInhibitor();
-        _createShortcutInhibitor();
         recording = true;
     }
 
     function stopRecording() {
         recording = false;
-        _destroyShortcutInhibitor();
     }
 
     Column {
@@ -716,7 +684,7 @@ Item {
 
                             const key = KeyUtils.xkbKeyFromQtKey(qtKey);
                             if (!key) {
-                                console.warn("[KeybindItem] Unknown key:", event.key, "mods:", event.modifiers);
+                                log.warn("Unknown key:", event.key, "mods:", event.modifiers);
                                 return;
                             }
 

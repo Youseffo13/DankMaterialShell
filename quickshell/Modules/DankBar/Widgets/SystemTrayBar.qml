@@ -1362,16 +1362,6 @@ BasePill {
                 axis = axisObj;
                 menuHandle = item?.menu;
 
-                if (parentScreen) {
-                    for (var i = 0; i < Quickshell.screens.length; i++) {
-                        const s = Quickshell.screens[i];
-                        if (s === parentScreen) {
-                            menuWindow.screen = s;
-                            break;
-                        }
-                    }
-                }
-
                 showMenu = true;
             }
 
@@ -1405,6 +1395,13 @@ BasePill {
 
             function closeWithAction() {
                 close();
+            }
+
+            Timer {
+                id: pendingActionCloseTimer
+                interval: 80
+                repeat: false
+                onTriggered: menuRoot.closeWithAction()
             }
 
             function showSubMenu(entry) {
@@ -1448,6 +1445,7 @@ BasePill {
 
                 WlrLayershell.namespace: "dms:tray-menu-window"
                 visible: menuRoot.showMenu && (menuRoot.trayItem?.hasMenu ?? false)
+                screen: menuRoot.parentScreen
                 WlrLayershell.layer: WlrLayershell.Top
                 WlrLayershell.exclusiveZone: -1
                 WlrLayershell.keyboardFocus: {
@@ -1862,7 +1860,7 @@ BasePill {
                                         } else if (typeof menuEntry.triggered === "function") {
                                             menuEntry.triggered();
                                         }
-                                        Qt.createQmlObject('import QtQuick; Timer { interval: 80; running: true; repeat: false; onTriggered: menuRoot.closeWithAction() }', menuRoot);
+                                        pendingActionCloseTimer.restart();
                                     }
                                 }
 

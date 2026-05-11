@@ -22,11 +22,14 @@ import qs.Modules.OSD
 import qs.Modules.ProcessList
 import qs.Modules.DankBar
 import qs.Modules.DankBar.Popouts
+import qs.Modules.Frame
 import qs.Modules.WorkspaceOverlays
+import qs.Modules.Settings.DisplayConfig
 import qs.Services
 
 Item {
     id: root
+    readonly property var log: Log.scoped("DMSShell")
 
     property bool osdSurfacesLoaded: true
     property int pendingOsdResumeReloads: 0
@@ -54,7 +57,7 @@ Item {
                         item.popoutService = PopoutService;
                     }
                     item.pluginId = pluginId;
-                    console.info("Daemon plugin loaded:", pluginId);
+                    log.info("Daemon plugin loaded:", pluginId);
                 }
             }
         }
@@ -93,7 +96,7 @@ Item {
                 }
 
                 onFadeCancelled: {
-                    console.log("Fade to lock cancelled by user on screen:", fadeWindowLoader.modelData.name);
+                    log.debug("Fade to lock cancelled by user on screen:", fadeWindowLoader.modelData.name);
                 }
             }
 
@@ -133,7 +136,7 @@ Item {
                 }
 
                 onFadeCancelled: {
-                    console.log("Fade to DPMS cancelled by user on screen:", fadeDpmsWindowLoader.modelData.name);
+                    log.debug("Fade to DPMS cancelled by user on screen:", fadeDpmsWindowLoader.modelData.name);
                 }
             }
 
@@ -162,7 +165,22 @@ Item {
         }
     }
 
+    property bool barSurfacesLoaded: true
+
+    function recreateBarSurfaces() {
+        if (barSurfacesLoaded)
+            barSurfacesLoaded = false;
+        barSurfaceReloadAction.schedule();
+    }
+
+    DeferredAction {
+        id: barSurfaceReloadAction
+        onTriggered: root.barSurfacesLoaded = true
+    }
+
     property string _barLayoutStateJson: {
+        if (!barSurfacesLoaded)
+            return "[]";
         const configs = SettingsData.barConfigs;
         const mapped = configs.map(c => ({
                     id: c.id,
@@ -186,6 +204,21 @@ Item {
         }
     }
 
+    Connections {
+        target: SettingsData
+        function onFrameEnabledChanged() {
+            root.recreateBarSurfaces();
+        }
+        function onConnectedFrameModeActiveChanged() {
+            root.recreateBarSurfaces();
+        }
+        function onForceDankBarLayoutRefresh() {
+            root.recreateBarSurfaces();
+        }
+    }
+
+    Frame {}
+
     Repeater {
         id: dankBarRepeater
         model: ScriptModel {
@@ -199,7 +232,7 @@ Item {
             id: barLoader
             required property var modelData
             property var barConfig: SettingsData.barConfigs.find(cfg => cfg.id === modelData.id) || null
-            active: barConfig?.enabled ?? false
+            active: root.barSurfacesLoaded && (barConfig?.enabled ?? false)
             asynchronous: false
 
             sourceComponent: DankBar {
@@ -272,6 +305,8 @@ Item {
         dockRecreateDebounce.start();
         // Force PolkitService singleton to initialize
         PolkitService.polkitAvailable;
+        // Force DisplayConfigState singleton to initialize so auto-config runs at startup
+        DisplayConfigState.hasOutputBackend;
         loginSoundTimer.start();
     }
 
@@ -330,7 +365,6 @@ Item {
         sourceComponent: Component {
             DankDashPopout {
                 id: dankDashPopout
-                onPopoutClosed: PopoutService.unloadDankDash()
             }
         }
     }
@@ -489,6 +523,8 @@ Item {
         enabled: PolkitService.polkitAvailable
 
         function onAuthenticationRequestStarted() {
+            if (PopoutService.systemUpdatePopout?.shouldBeVisible)
+                return;
             polkitAuthModalLoader.active = true;
             if (polkitAuthModalLoader.item)
                 polkitAuthModalLoader.item.show();
@@ -773,7 +809,7 @@ Item {
                 cmd += " " + escapedPath;
             }
 
-            console.log("FilePicker: Launching", cmd);
+            log.debug("FilePicker: Launching", cmd);
 
             Quickshell.execDetached({
                 command: ["sh", "-c", cmd]
@@ -805,10 +841,10 @@ Item {
         }
 
         function onAppPickerRequested(data) {
-            console.log("DMSShell: App picker requested with data:", JSON.stringify(data));
+            log.debug("App picker requested with data:", JSON.stringify(data));
 
             if (!data || !data.target) {
-                console.warn("DMSShell: Invalid app picker request data");
+                log.warn("Invalid app picker request data");
                 return;
             }
 
@@ -877,9 +913,18 @@ Item {
 
         ProcessListModal {
             id: processListModal
+            property bool wasShown: false
 
             Component.onCompleted: {
                 PopoutService.processListModal = processListModal;
+            }
+
+            onVisibleChanged: {
+                if (visible) {
+                    wasShown = true;
+                } else if (wasShown) {
+                    PopoutService.unloadProcessListModal();
+                }
             }
         }
     }
@@ -895,7 +940,12 @@ Item {
 
         SystemUpdatePopout {
             id: systemUpdatePopout
-            onPopoutClosed: PopoutService.unloadSystemUpdate()
+            onPopoutClosed: {
+                if (systemUpdatePopout._reopenAfterUpgrade) {
+                    return;
+                }
+                PopoutService.unloadSystemUpdate();
+            }
 
             Component.onCompleted: {
                 PopoutService.systemUpdatePopout = systemUpdatePopout;
@@ -914,7 +964,6 @@ Item {
             slideoutWidth: 480
             expandable: true
             expandedWidthValue: 960
-            customTransparency: SettingsData.notepadTransparencyOverride
 
             content: Component {
                 Notepad {
@@ -1090,12 +1139,6 @@ Item {
                 }
             }
         }
-    }
-
-    Loader {
-        id: powerProfileWatcherLoader
-        active: SettingsData.osdPowerProfileEnabled
-        source: "Services/PowerProfileWatcher.qml"
     }
 
     LazyLoader {

@@ -11,6 +11,9 @@ import qs.Modules.Settings.Widgets
 Item {
     id: themeColorsTab
 
+    property var parentModal: null
+    readonly property bool connectedFrameModeActive: SettingsData.connectedFrameModeActive
+    readonly property bool frameModeActive: SettingsData.frameEnabled
     property var cachedIconThemes: SettingsData.availableIconThemes
     property var cachedCursorThemes: SettingsData.availableCursorThemes
     property var cachedMatugenSchemes: Theme.availableMatugenSchemes.map(option => option.label)
@@ -1613,12 +1616,20 @@ Item {
                     }
                 }
 
+                SettingsControlledByFrame {
+                    visible: themeColorsTab.connectedFrameModeActive
+                    parentModal: themeColorsTab.parentModal
+                    settingLabel: I18n.tr("Surface Opacity")
+                    reason: I18n.tr("Managed by Frame in Connected Mode")
+                }
+
                 SettingsSliderRow {
                     tab: "theme"
-                    tags: ["popup", "transparency", "opacity", "modal"]
+                    tags: ["surface", "popup", "transparency", "opacity", "modal"]
                     settingKey: "popupTransparency"
-                    text: I18n.tr("Popup Transparency")
+                    text: I18n.tr("Surface Opacity")
                     description: I18n.tr("Controls opacity of all popouts, modals, and their content layers")
+                    visible: !themeColorsTab.connectedFrameModeActive
                     value: Math.round(SettingsData.popupTransparency * 100)
                     minimum: 0
                     maximum: 100
@@ -1837,7 +1848,7 @@ Item {
                     tags: ["blur", "background", "transparency", "glass", "frosted"]
                     settingKey: "blurEnabled"
                     text: I18n.tr("Background Blur")
-                    description: BlurService.available ? I18n.tr("Blur the background behind bars, popouts, modals, and notifications. Requires compositor support and configuration.") : I18n.tr("Requires a newer version of Quickshell")
+                    description: !BlurService.available ? I18n.tr("Requires a newer version of Quickshell") : I18n.tr("Blur the background behind bars, popouts, modals, and notifications. Requires compositor support and configuration.")
                     checked: SettingsData.blurEnabled ?? false
                     enabled: BlurService.available
                     onToggled: checked => SettingsData.set("blurEnabled", checked)
@@ -2240,12 +2251,20 @@ Item {
                 settingKey: "modalBackground"
                 iconName: "layers"
 
+                SettingsControlledByFrame {
+                    visible: themeColorsTab.frameModeActive
+                    parentModal: themeColorsTab.parentModal
+                    settingLabel: I18n.tr("Darken Modal Background")
+                    reason: I18n.tr("Disabled by Frame Mode")
+                }
+
                 SettingsToggleRow {
                     tab: "theme"
                     tags: ["modal", "darken", "background", "overlay"]
                     settingKey: "modalDarkenBackground"
                     text: I18n.tr("Darken Modal Background")
                     description: I18n.tr("Show darkened overlay behind modal dialogs")
+                    visible: !themeColorsTab.frameModeActive
                     checked: SettingsData.modalDarkenBackground
                     onToggled: checked => SettingsData.set("modalDarkenBackground", checked)
                 }
@@ -2647,6 +2666,18 @@ Item {
 
                 SettingsToggleRow {
                     tab: "theme"
+                    tags: ["matugen", "vencord", "discord", "template"]
+                    settingKey: "matugenTemplateVencord"
+                    text: "vencord"
+                    description: getTemplateDescription("vencord", "")
+                    descriptionColor: getTemplateDescriptionColor("vencord")
+                    visible: SettingsData.runDmsMatugenTemplates
+                    checked: SettingsData.matugenTemplateVencord
+                    onToggled: checked => SettingsData.set("matugenTemplateVencord", checked)
+                }
+
+                SettingsToggleRow {
+                    tab: "theme"
                     tags: ["matugen", "equibop", "discord", "template"]
                     settingKey: "matugenTemplateEquibop"
                     text: "equibop"
@@ -3033,6 +3064,7 @@ Item {
 
         ThemeBrowser {
             id: themeBrowserItem
+            parentModal: themeColorsTab.parentModal
         }
     }
 

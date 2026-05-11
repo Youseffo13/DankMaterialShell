@@ -448,8 +448,9 @@ Rectangle {
                     name: "sync"
                     size: 24
                     color: Qt.rgba(Theme.surfaceText.r || 0.8, Theme.surfaceText.g || 0.8, Theme.surfaceText.b || 0.8, 0.4)
+                    smoothTransform: BluetoothService.adapter?.discovering ?? false
 
-                    RotationAnimation on rotation {
+                    RotationAnimator on rotation {
                         running: parent.visible
                         loops: Animation.Infinite
                         from: 0
