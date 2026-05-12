@@ -252,14 +252,14 @@ Item {
                     text: I18n.tr("Font Weight")
                     description: I18n.tr("Select font weight for UI text")
                     options: [
-                        I18n.tr("Thin"), 
-                        I18n.tr("Extra Light"), 
-                        I18n.tr("Light"), 
-                        I18n.tr("Regular"), 
-                        I18n.tr("Medium"), 
-                        I18n.tr("Demi Bold"), 
-                        I18n.tr("Bold"), 
-                        I18n.tr("Extra Bold"), 
+                        I18n.tr("Thin"),
+                        I18n.tr("Extra Light"),
+                        I18n.tr("Light"),
+                        I18n.tr("Regular"),
+                        I18n.tr("Medium"),
+                        I18n.tr("Demi Bold"),
+                        I18n.tr("Bold"),
+                        I18n.tr("Extra Bold"),
                         I18n.tr("Black")
                     ]
                     currentValue: {
